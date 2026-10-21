@@ -1,0 +1,6 @@
+{
+  "name": "TIẾN PHÁT AI - Hệ Thống Quản Trị 3 Fanpage In Ấn & Bao Bì Tự Động",
+  "description": "Hệ thống quản trị 3 Fanpage in ấn & bao bì tự động, hộp thư AI tư vấn chốt đơn, bóc tách thông số kỹ thuật sản xuất và trợ lý viết bài marketing ngành in.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,229 @@
+{
+  "entities": {
+    "StaffProfile": {
+      "title": "StaffProfile",
+      "description": "Hồ sơ nhân viên đăng nhập hệ thống Tiến Phát AI",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID của nhân viên",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Họ và tên nhân viên",
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email đăng nhập nhân viên",
+          "maxLength": 160
+        },
+        "role": {
+          "type": "string",
+          "enum": ["staff", "admin"],
+          "description": "Vai trò nhân viên trong hệ thống",
+          "maxLength": 32
+        },
+        "connectedPagesCount": {
+          "type": "integer",
+          "description": "Số lượng Fanpage đã kết nối qua Facebook OAuth (tối đa 3)"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Thời gian cập nhật gần nhất"
+        }
+      },
+      "required": ["uid", "displayName", "email", "role", "connectedPagesCount", "updatedAt"]
+    },
+    "ProductionOrder": {
+      "title": "ProductionOrder",
+      "description": "Đơn đặt hàng in ấn & bao bì kèm thông số kỹ thuật lưu trên Firestore",
+      "type": "object",
+      "properties": {
+        "orderCode": {
+          "type": "string",
+          "description": "Mã lệnh sản xuất (VD: LSX-TP-261001)",
+          "maxLength": 64
+        },
+        "staffUid": {
+          "type": "string",
+          "description": "UID nhân viên phụ trách lưu đơn",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "staffEmail": {
+          "type": "string",
+          "description": "Email nhân viên lưu đơn",
+          "maxLength": 160
+        },
+        "pageId": {
+          "type": "string",
+          "enum": ["page1", "page2", "page3"],
+          "description": "Mã Fanpage nguồn",
+          "maxLength": 32
+        },
+        "pageName": {
+          "type": "string",
+          "description": "Tên Fanpage nguồn",
+          "maxLength": 120
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Tên khách hàng đặt in",
+          "maxLength": 150
+        },
+        "interactionType": {
+          "type": "string",
+          "description": "Loại tương tác Tin nhắn hoặc Bình luận",
+          "maxLength": 64
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Đã chốt SĐT", "Đang hỏi quy cách", "Cần báo giá", "Đã xuất lệnh sản xuất"],
+          "description": "Trạng thái đơn hàng",
+          "maxLength": 64
+        },
+        "product": {
+          "type": "string",
+          "description": "Sản phẩm đặt in",
+          "maxLength": 200
+        },
+        "dimensions": {
+          "type": "string",
+          "description": "Kích thước kỹ thuật (DxRxC hoặc m2)",
+          "maxLength": 120
+        },
+        "quantity": {
+          "type": "string",
+          "description": "Số lượng đặt in",
+          "maxLength": 120
+        },
+        "materialAndFinishing": {
+          "type": "string",
+          "description": "Chất liệu giấy/carton & gia công",
+          "maxLength": 250
+        },
+        "designFileStatus": {
+          "type": "string",
+          "description": "Tình trạng file thiết kế",
+          "maxLength": 200
+        },
+        "phoneOrZalo": {
+          "type": "string",
+          "description": "SĐT hoặc Zalo khách hàng",
+          "maxLength": 64
+        },
+        "deliveryAddress": {
+          "type": "string",
+          "description": "Địa chỉ giao hàng",
+          "maxLength": 250
+        },
+        "commentHidden": {
+          "type": "boolean",
+          "description": "Trạng thái đã ẩn bình luận chứa SĐT"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Thời điểm tạo đơn trên Firestore"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Thời điểm cập nhật đơn trên Firestore"
+        }
+      },
+      "required": [
+        "orderCode",
+        "staffUid",
+        "staffEmail",
+        "pageId",
+        "pageName",
+        "customerName",
+        "interactionType",
+        "status",
+        "product",
+        "dimensions",
+        "quantity",
+        "materialAndFinishing",
+        "designFileStatus",
+        "phoneOrZalo",
+        "deliveryAddress",
+        "commentHidden",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ConnectedFanpage": {
+      "title": "ConnectedFanpage",
+      "description": "Cấu hình Fanpage kết nối qua Facebook OAuth (tối đa 3 Fanpage)",
+      "type": "object",
+      "properties": {
+        "slotId": {
+          "type": "string",
+          "enum": ["page1", "page2", "page3"],
+          "description": "Vị trí Fanpage (Page 1, Page 2, hoặc Page 3)",
+          "maxLength": 32
+        },
+        "staffUid": {
+          "type": "string",
+          "description": "UID nhân viên quản trị kết nối",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "fbPageId": {
+          "type": "string",
+          "description": "Facebook Graph API Page ID",
+          "maxLength": 100
+        },
+        "name": {
+          "type": "string",
+          "description": "Tên Fanpage",
+          "maxLength": 120
+        },
+        "specialty": {
+          "type": "string",
+          "description": "Chuyên môn ngành in của Fanpage",
+          "maxLength": 250
+        },
+        "webhookSubscribed": {
+          "type": "boolean",
+          "description": "Trạng thái đăng ký nhận Webhook từ Facebook Graph API"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Thời điểm đồng bộ cấu hình"
+        }
+      },
+      "required": [
+        "slotId",
+        "staffUid",
+        "fbPageId",
+        "name",
+        "specialty",
+        "webhookSubscribed",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/staff_profiles/{staffUid}": {
+      "schema": { "$ref": "#/entities/StaffProfile" },
+      "description": "Lưu thông tin hồ sơ nhân viên đăng nhập"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/ProductionOrder" },
+      "description": "Lưu danh sách đơn hàng và lệnh sản xuất in ấn của nhân viên"
+    },
+    "/connected_fanpages/{pageDocId}": {
+      "schema": { "$ref": "#/entities/ConnectedFanpage" },
+      "description": "Lưu cấu hình tối đa 3 Fanpage kết nối Facebook OAuth của nhân viên"
+    }
+  }
+}

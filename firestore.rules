@@ -1,0 +1,135 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() && request.auth.token.email == 'baobitienphatgialai@gmail.com';
+    }
+
+    // 1. Validation Blueprint: StaffProfile
+    function isValidStaffProfile(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'role', 'connectedPagesCount', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'email', 'role', 'connectedPagesCount', 'updatedAt'])
+        && data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid == request.auth.uid
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 120
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 160
+        && data.role is string && (data.role == 'staff' || (data.role == 'admin' && isBootstrappedAdmin()))
+        && data.connectedPagesCount is int && data.connectedPagesCount >= 0 && data.connectedPagesCount <= 3
+        && data.updatedAt == request.time;
+    }
+
+    match /staff_profiles/{staffUid} {
+      allow get: if isSignedIn() && isValidId(staffUid) && (request.auth.uid == staffUid || isBootstrappedAdmin());
+      allow list: if isSignedIn() && (resource.data.uid == request.auth.uid || isBootstrappedAdmin());
+      allow create: if isSignedIn() && isValidId(staffUid) && request.auth.uid == staffUid && isValidStaffProfile(incoming());
+      allow update: if isSignedIn() && isValidId(staffUid) && request.auth.uid == staffUid
+        && isValidStaffProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().role == existing().role
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'connectedPagesCount', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // 2. Validation Blueprint: ProductionOrder
+    function isValidProductionOrder(data) {
+      return data.keys().hasAll([
+          'orderCode', 'staffUid', 'staffEmail', 'pageId', 'pageName',
+          'customerName', 'interactionType', 'status', 'product',
+          'dimensions', 'quantity', 'materialAndFinishing',
+          'designFileStatus', 'phoneOrZalo', 'deliveryAddress',
+          'commentHidden', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'orderCode', 'staffUid', 'staffEmail', 'pageId', 'pageName',
+          'customerName', 'interactionType', 'status', 'product',
+          'dimensions', 'quantity', 'materialAndFinishing',
+          'designFileStatus', 'phoneOrZalo', 'deliveryAddress',
+          'commentHidden', 'createdAt', 'updatedAt'
+        ])
+        && data.orderCode is string && data.orderCode.size() >= 1 && data.orderCode.size() <= 64
+        && data.staffUid is string && data.staffUid.size() >= 1 && data.staffUid.size() <= 128 && data.staffUid == request.auth.uid
+        && data.staffEmail is string && data.staffEmail.size() >= 3 && data.staffEmail.size() <= 160
+        && data.pageId is string && data.pageId in ['page1', 'page2', 'page3']
+        && data.pageName is string && data.pageName.size() >= 1 && data.pageName.size() <= 120
+        && data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 150
+        && data.interactionType is string && data.interactionType.size() >= 1 && data.interactionType.size() <= 64
+        && data.status is string && data.status in ['Đã chốt SĐT', 'Đang hỏi quy cách', 'Cần báo giá', 'Đã xuất lệnh sản xuất']
+        && data.product is string && data.product.size() >= 1 && data.product.size() <= 200
+        && data.dimensions is string && data.dimensions.size() >= 1 && data.dimensions.size() <= 120
+        && data.quantity is string && data.quantity.size() >= 1 && data.quantity.size() <= 120
+        && data.materialAndFinishing is string && data.materialAndFinishing.size() >= 1 && data.materialAndFinishing.size() <= 250
+        && data.designFileStatus is string && data.designFileStatus.size() >= 1 && data.designFileStatus.size() <= 200
+        && data.phoneOrZalo is string && data.phoneOrZalo.size() >= 1 && data.phoneOrZalo.size() <= 64
+        && data.deliveryAddress is string && data.deliveryAddress.size() >= 1 && data.deliveryAddress.size() <= 250
+        && data.commentHidden is bool
+        && data.updatedAt == request.time;
+    }
+
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && isValidId(orderId) && (resource.data.staffUid == request.auth.uid || isBootstrappedAdmin());
+      allow list: if isSignedIn() && (resource.data.staffUid == request.auth.uid || isBootstrappedAdmin());
+      allow create: if isSignedIn() && isValidId(orderId)
+        && isValidProductionOrder(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if isSignedIn() && isValidId(orderId)
+        && isValidProductionOrder(incoming())
+        && (existing().staffUid == request.auth.uid || isBootstrappedAdmin())
+        && incoming().staffUid == existing().staffUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().orderCode == existing().orderCode
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'status', 'product', 'dimensions', 'quantity',
+          'materialAndFinishing', 'designFileStatus',
+          'phoneOrZalo', 'deliveryAddress', 'commentHidden', 'updatedAt'
+        ]);
+      allow delete: if isSignedIn() && isValidId(orderId) && (resource.data.staffUid == request.auth.uid || isBootstrappedAdmin());
+    }
+
+    // 3. Validation Blueprint: ConnectedFanpage (Max 3 Fanpages per user)
+    function isValidConnectedFanpage(data) {
+      return data.keys().hasAll(['slotId', 'staffUid', 'fbPageId', 'name', 'specialty', 'webhookSubscribed', 'updatedAt'])
+        && data.keys().hasOnly(['slotId', 'staffUid', 'fbPageId', 'name', 'specialty', 'webhookSubscribed', 'updatedAt'])
+        && data.slotId is string && data.slotId in ['page1', 'page2', 'page3']
+        && data.staffUid is string && data.staffUid.size() >= 1 && data.staffUid.size() <= 128 && data.staffUid == request.auth.uid
+        && data.fbPageId is string && data.fbPageId.size() >= 1 && data.fbPageId.size() <= 100
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 120
+        && data.specialty is string && data.specialty.size() >= 1 && data.specialty.size() <= 250
+        && data.webhookSubscribed is bool
+        && data.updatedAt == request.time;
+    }
+
+    match /connected_fanpages/{pageDocId} {
+      allow get: if isSignedIn() && isValidId(pageDocId) && (resource.data.staffUid == request.auth.uid || isBootstrappedAdmin());
+      allow list: if isSignedIn() && (resource.data.staffUid == request.auth.uid || isBootstrappedAdmin());
+      allow create: if isSignedIn() && isValidId(pageDocId) && isValidConnectedFanpage(incoming());
+      allow update: if isSignedIn() && isValidId(pageDocId)
+        && isValidConnectedFanpage(incoming())
+        && existing().staffUid == request.auth.uid
+        && incoming().staffUid == existing().staffUid
+        && incoming().slotId == existing().slotId
+        && incoming().diff(existing()).affectedKeys().hasOnly(['fbPageId', 'name', 'specialty', 'webhookSubscribed', 'updatedAt']);
+      allow delete: if isSignedIn() && isValidId(pageDocId) && resource.data.staffUid == request.auth.uid;
+    }
+  }
+}
